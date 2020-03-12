@@ -1,25 +1,23 @@
-# snapbits
+# `sds`
 
-[![GoDoc](https://godoc.org/github.com/tidwall/snapbits?status.svg)](https://godoc.org/github.com/tidwall/snapbits)
+[![GoDoc](https://godoc.org/github.com/tidwall/sds?status.svg)](https://godoc.org/github.com/tidwall/sds)
 
-This package provides an fast and simple way for reading and writing snappy
-compressed bit streams.
+This package provides an fast and simple way for reading and writing custom
+data streams in Go.
 
 Supports reading and writing most basic types including: 
 `int8`, `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`,
 `byte`, `bool`, `float32`, `float64`, `[]byte`, `string`.
 Also `uvarint` and `varint`. 
 
-*Now isn't that nice.*
-
 ## Usage
 
 ### Installing
 
-To start using Snapbits, install Go and run `go get`:
+To start using `sds`, install Go and run `go get`:
 
 ```sh
-$ go get -u github.com/tidwall/snapbits
+$ go get -u github.com/tidwall/sds
 ```
 
 ### Basic operations
@@ -27,7 +25,7 @@ $ go get -u github.com/tidwall/snapbits
 ```go
 // create a writer
 var bb bytes.Buffer
-w := snapbits.NewWriter(&bb) 
+w := sds.NewWriter(&bb) 
 
 // write some stuff
 err = w.WriteString("Hello Jello")
@@ -37,10 +35,10 @@ err = w.WriteVarint(-119290019)
 err = w.WriteUint16(-119290019)
 
 // close the reader when done
-w.Close()
+w.Flush()
 
 // create a reader
-r := snapbits.NewReader(&bb)
+r := sds.NewReader(&bb)
 
 // read some stuff
 s, err = w.ReadString()
@@ -50,6 +48,8 @@ x, err = w.ReadVarint()
 x, err = w.ReadUint16()
 ```
 
+*Now isn't that nice.*
+
 ## License
 
-`snapbits` source code is available under the MIT License.
+`sds` source code is available under the MIT License.

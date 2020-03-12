@@ -1,4 +1,4 @@
-package snapbits
+package sds
 
 import (
 	"bufio"
@@ -6,38 +6,21 @@ import (
 	"io"
 	"math"
 	"unsafe"
-
-	"github.com/golang/snappy"
 )
 
 // Writer for writing snapbits
 type Writer struct {
 	bw *bufio.Writer
-	sw *snappy.Writer
 }
 
 // NewWriter returns a new Writer
 func NewWriter(w io.Writer) *Writer {
-	sw := snappy.NewWriter(w)
-	bw := bufio.NewWriter(sw)
-	return &Writer{bw, sw}
+	return &Writer{bufio.NewWriter(w)}
 }
 
 // Flush the buffered bytes to the underlying writer.
 func (w *Writer) Flush() error {
-	if err := w.bw.Flush(); err != nil {
-		return err
-	}
-	return w.sw.Flush()
-}
-
-// Close the writer. This operation flushes the buffered data prior to
-// closeding, if needed.
-func (w *Writer) Close() error {
-	if err := w.bw.Flush(); err != nil {
-		return err
-	}
-	return w.sw.Close()
+	return w.bw.Flush()
 }
 
 // WriteUvarint writes a uvarint
@@ -144,15 +127,12 @@ func (w *Writer) WriteBytes(b []byte) error {
 
 // Reader for reading snapbits
 type Reader struct {
-	sr *snappy.Reader
 	br *bufio.Reader
 }
 
 // NewReader returns a new Reader
 func NewReader(r io.Reader) *Reader {
-	sr := snappy.NewReader(r)
-	br := bufio.NewReader(sr)
-	return &Reader{sr, br}
+	return &Reader{bufio.NewReader(r)}
 }
 
 // ReadUvarint reads a uvarint

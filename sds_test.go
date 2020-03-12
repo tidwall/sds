@@ -1,4 +1,4 @@
-package snapbits
+package sds
 
 import (
 	"bytes"
@@ -123,7 +123,9 @@ func TestSnapBits(t *testing.T) {
 				panic("invalid")
 			}
 		}
-		w.Close()
+		if err := w.Flush(); err != nil {
+			t.Fatal(err)
+		}
 		r := NewReader(&bb)
 		for i := 0; i < len(els); i++ {
 			var v interface{}
