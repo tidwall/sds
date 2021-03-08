@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/tidwall/sds?status.svg)](https://godoc.org/github.com/tidwall/sds)
 
-This package provides an fast and simple way for reading and writing custom
+This package provides a fast and simple way for reading and writing custom
 data streams in Go.
 
 Supports reading and writing most basic types including: 
