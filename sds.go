@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"io"
 	"math"
-	"unsafe"
 )
 
 // Writer for writing snapbits
@@ -122,7 +121,11 @@ func (w *Writer) WriteString(s string) error {
 
 // WriteBytes writes bytes
 func (w *Writer) WriteBytes(b []byte) error {
-	return w.WriteString(*(*string)(unsafe.Pointer(&b)))
+	if err := w.WriteUvarint(uint64(len(b))); err != nil {
+		return err
+	}
+	_, err := w.bw.Write(b)
+	return err
 }
 
 // Reader for reading snapbits
@@ -245,9 +248,13 @@ func (r *Reader) ReadBytes() ([]byte, error) {
 
 // ReadString reads a string
 func (r *Reader) ReadString() (string, error) {
-	b, err := r.ReadBytes()
+	n, err := r.ReadUvarint()
 	if err != nil {
 		return "", err
 	}
-	return *(*string)(unsafe.Pointer(&b)), nil
+	b := make([]byte, n)
+	if _, err := io.ReadFull(r.br, b); err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
