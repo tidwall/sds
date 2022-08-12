@@ -2,6 +2,7 @@ package sds
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"math/rand"
 	"testing"
@@ -31,6 +32,25 @@ func randString() string {
 		b[i] = (b[i] % 26) + 'a'
 	}
 	return string(b)
+}
+
+type testBytesBuffer struct {
+	err error
+	buf bytes.Buffer
+}
+
+func (bb *testBytesBuffer) Write(p []byte) (int, error) {
+	if bb.err != nil {
+		return 0, bb.err
+	}
+	return bb.buf.Write(p)
+}
+
+func (bb *testBytesBuffer) Read(p []byte) (int, error) {
+	if bb.err != nil {
+		return 0, bb.err
+	}
+	return bb.buf.Read(p)
 }
 
 type varint int64
@@ -82,7 +102,7 @@ func TestSnapBits(t *testing.T) {
 	for time.Since(start) < time.Second {
 		N := 10_000 // number of random elements
 		els := make([]interface{}, N)
-		var bb bytes.Buffer
+		var bb testBytesBuffer
 		w := NewWriter(&bb)
 		for i := 0; i < len(els); i++ {
 			els[i] = randEl()
@@ -124,6 +144,9 @@ func TestSnapBits(t *testing.T) {
 			}
 		}
 		if err := w.Flush(); err != nil {
+			t.Fatal(err)
+		}
+		if err := w.Error(); err != nil {
 			t.Fatal(err)
 		}
 		r := NewReader(&bb)
@@ -186,9 +209,135 @@ func TestSnapBits(t *testing.T) {
 				t.Fatalf("expected %T'%v', got %T'%#v'", els[i], els[i], v, v)
 			}
 		}
+		if err := r.Error(); err != nil {
+			t.Fatal(err)
+		}
 		_, err := r.ReadByte()
 		if err != io.EOF {
 			t.Fatalf("expected '%v', got '%v'", io.EOF, err)
 		}
+		if err := r.Error(); err != io.EOF {
+			t.Fatalf("expected '%v', got '%v'", io.EOF, err)
+		}
 	}
+}
+
+var errFake = errors.New("fake error")
+
+func TestWriteErrors(t *testing.T) {
+	var bb testBytesBuffer
+	bb.err = errFake
+	w := NewWriter(&bb)
+
+	if err := w.WriteBool(true); err != nil {
+		// This should work because the underlying buffered writer
+		t.Fatalf("expected '%v', got '%v'", nil, err)
+	}
+	if err := w.Flush(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteInt8(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteInt16(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteInt32(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteInt64(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteUint8(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteUint16(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteUint32(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteUint64(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteFloat32(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteFloat64(0); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteBool(false); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteString(""); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteBytes(nil); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteUvarint(uint64(0)); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteVarint(int64(0)); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if err := w.WriteByte(byte(0)); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+}
+
+func TestReadErrors(t *testing.T) {
+	var bb testBytesBuffer
+	bb.err = errFake
+	r := NewReader(&bb)
+
+	if _, err := r.ReadInt8(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadInt16(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadInt32(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadInt64(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadUint8(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadUint16(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadUint32(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadUint64(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadFloat32(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadFloat64(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadBool(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadString(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadBytes(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadUvarint(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadVarint(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+	if _, err := r.ReadByte(); err != errFake {
+		t.Fatalf("expected '%v', got '%v'", errFake, err)
+	}
+
 }
