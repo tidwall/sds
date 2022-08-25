@@ -31,6 +31,15 @@ func (w *Writer) Error() error {
 	return w.err
 }
 
+// SetError allows for setting a custom user error, which will then be returned
+// from all further Writer.Set*() calls.
+// This operation is ignored if an error has already been assigned to Writer.
+func (w *Writer) SetError(err error) {
+	if w.err == nil {
+		w.err = err
+	}
+}
+
 // WriteUvarint writes a uvarint
 func (w *Writer) WriteUvarint(x uint64) error {
 	if w.err == nil {
@@ -172,6 +181,15 @@ func NewReader(r io.Reader) *Reader {
 // Error returns any previous error.
 func (r *Reader) Error() error {
 	return r.err
+}
+
+// SetError allows for setting a custom user error, which will then be returned
+// from all further Reader.Set*() calls.
+// This operation is ignored if an error has already been assigned to Reader.
+func (r *Reader) SetError(err error) {
+	if r.err == nil {
+		r.err = err
+	}
 }
 
 // ReadUvarint reads a uvarint
